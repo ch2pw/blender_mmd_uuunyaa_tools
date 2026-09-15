@@ -12,6 +12,7 @@ import bpy
 from bpy.app.translations import pgettext as _
 from bpy.app.translations import pgettext_iface as iface_
 
+from ...editors.armatures import ArmatureEditor
 from ...editors.meshes import MeshEditor
 from ...utilities import MessageException, import_mmd_tools
 
@@ -56,6 +57,7 @@ class RigidBodyToClothConverter:
         ribbon_stiffness: float,
         physics_mode: PhysicsMode,
         extend_ribbon_area: bool,
+        clean_physics_bones: bool,
     ):  # pylint: disable=too-many-arguments
         # pylint: disable=too-many-locals, too-many-statements
         mmd_model = import_mmd_tools().core.model.Model(mmd_root_object)
@@ -63,6 +65,10 @@ class RigidBodyToClothConverter:
         mmd_armature_object = mmd_model.armature()
 
         rigid_body_index_dict = {rb: i for i, rb in enumerate(rigid_body_objects)}
+
+        if clean_physics_bones:
+            bone_names = [rb.mmd_rigid.bone for rb in rigid_body_objects if rb.mmd_rigid.bone]
+            cls.clean_physics_bones(bone_names, mmd_armature_object)
 
         pose_bones: List[bpy.types.PoseBone] = []
         for rigid_body_object in rigid_body_objects:
@@ -167,6 +173,35 @@ class RigidBodyToClothConverter:
             bpy.ops.object.surfacedeform_bind(modifier=MeshEditor(mmd_mesh_object).add_surface_deform_modifier("physics_cloth_deform", target=cloth_mesh_object, vertex_group=deform_vertex_group.name).name)
 
         cloth_bm.free()
+
+    @staticmethod
+    def clean_physics_bones(
+        physics_bone_names: List[str],
+        mmd_armature_object: bpy.types.Object,
+    ):
+        """
+        Find tip bones in physics bones and turn them into proper bones,
+        by copying parent bone's orientation and length.
+        """
+
+        prev_mode = bpy.context.mode
+        try:
+            bpy.context.view_layer.objects.active = mmd_armature_object
+            bpy.ops.object.mode_set(mode="EDIT")
+
+            editor = ArmatureEditor(mmd_armature_object)
+            for name in physics_bone_names:
+                pbone = editor.pose_bones.get(name)
+                if not pbone or not pbone.mmd_bone.is_tip:
+                    continue
+
+                bone = editor.edit_bones.get(name)
+                if bone and bone.parent:
+                    pbone.mmd_bone.is_tip = False
+                    bone.align_orientation(bone.parent)
+                    bone.length = bone.parent.length
+        finally:
+            bpy.ops.object.mode_set(mode=prev_mode)
 
     @staticmethod
     def bind_mmd_mesh(

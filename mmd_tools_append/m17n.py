@@ -706,6 +706,18 @@ translations_tuple = (
         ("zh_HANS", "选择要变形的网格和刚体", (False, ())),
     ),
     (
+        ("*", "Clean Bones"),
+        (("bpy.types.MMD_TOOLS_APPEND_OT_convert_rigid_body_to_cloth.clean_bones",), ()),
+        ("ja_JP", "ボーンを整理", (False, ())),
+        ("zh_HANS", "", (False, ())),
+    ),
+    (
+        ("*", "Fix physics bones for conversion"),
+        (("bpy.types.MMD_TOOLS_APPEND_OT_convert_rigid_body_to_cloth.clean_bones",), ()),
+        ("ja_JP", "変換用に物理ボーンを修正します", (False, ())),
+        ("zh_HANS", "", (False, ())),
+    ),
+    (
         ("*", "Extend Ribbon Area"),
         (("bpy.types.MMD_TOOLS_APPEND_OT_convert_rigid_body_to_cloth.extend_ribbon_area",), ()),
         ("ja_JP", "リボンエリア拡張", (False, ())),
